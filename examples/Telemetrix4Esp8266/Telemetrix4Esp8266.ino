@@ -23,8 +23,8 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-const char *ssid = "A-Net";
-const char *password = "Sam2Curly";
+const char *ssid = "YOUR_SSID";
+const char *password = "YOUR_PASSWORD";
 
 // Default ip port value.
 // Set the telemetrix or telemetrix-aio port to the same value
