@@ -23,6 +23,7 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+// Modify the next two lines to match your network values
 const char *ssid = "YOUR_SSID";
 const char *password = "YOUR_PASSWORD";
 
@@ -369,7 +370,6 @@ void analog_write()
   pin = command_buffer[0];
 
   value = (command_buffer[1] << 8) + command_buffer[2];
-  Serial.println(value);
   analogWrite(pin, value);
 }
 
@@ -920,12 +920,15 @@ void scan_sonars()
     // turn on LED
     digitalWrite(LED_BUILTIN, LOW);
 
-    Serial.println("\nAllow 15 seconds for connection to complete..");
+    Serial.print("\n\nAllow 15 seconds for connection to complete..");
 
     while (WiFi.status() != WL_CONNECTED)
     {
-      delay(10);
+      delay(1000);
+      Serial.print(".");
     }
+
+    Serial.println();
 
     // Turn off LED
     digitalWrite(LED_BUILTIN, HIGH);
