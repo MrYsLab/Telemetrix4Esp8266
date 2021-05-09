@@ -91,6 +91,8 @@ extern void set_analog_scanning_interval();
 
 extern void enable_all_reports();
 
+extern void reset_data_structures();
+
 // This value must be the same as specified when instantiating the
 // telemetrix client. The client defaults to a value of 1.
 // This value is used for the client to auto-discover and to
@@ -119,6 +121,7 @@ extern void enable_all_reports();
 #define STOP_ALL_REPORTS 15
 #define SET_ANALOG_SCANNING_INTERVAL 16
 #define ENABLE_ALL_REPORTS 17
+#define RESET_DATA_STRUCTURES 18
 
 // When adding a new command update the command_table.
 // The command length is the number of bytes that follow
@@ -135,7 +138,7 @@ struct command_descriptor
 
 // If you add new commands, make sure to extend the siz of this
 // array.
-command_descriptor command_table[18] =
+command_descriptor command_table[19] =
     {
         {&serial_loopback},
         {&set_pin_mode},
@@ -154,7 +157,8 @@ command_descriptor command_table[18] =
         {dht_new},
         {stop_all_reports},
         {set_analog_scanning_interval},
-        {enable_all_reports}};
+        {enable_all_reports},
+        {reset_data_structures}};
 
 // Input pin reporting control sub commands (modify_reporting)
 #define REPORTING_DISABLE_ALL 0
@@ -416,6 +420,31 @@ void modify_reporting()
   default:
     break;
   }
+}
+
+void reset_data_structures(){
+      stop_all_reports();
+
+    // detach any attached servos
+    for (int i = 0; i < MAX_SERVOS; i++)
+    {
+        if (servos[i].attached() == true)
+        {
+            servos[i].detach();
+        }
+    }
+
+    sonars_index = 0; // reset the index into the sonars array
+
+    dht_index = 0; // index into dht array
+
+    dht_current_millis = 0;      // for analog input loop
+    dht_previous_millis = 0;     // for analog input loop
+    dht_scan_interval = 2000;    // scan dht's every 2 seconds
+
+    memset(sonars, 0, sizeof(sonars));
+    memset(dhts, 0, sizeof(dhts));
+    enable_all_reports();
 }
 
 void get_firmware_version()
@@ -697,7 +726,7 @@ void get_next_command()
   command = (byte)client.read();
 
   // uncomment the next line to see the packet length and command
-  //send_debug_info(packet_length, command);
+  // send_debug_info(packet_length, command);
   command_entry = command_table[command];
 
   if (packet_length > 1)
@@ -712,7 +741,7 @@ void get_next_command()
       }
       command_buffer[i] = (byte)client.read();
       // uncomment out to see each of the bytes following the command
-      //send_debug_info(i, command_buffer[i]);
+      // send_debug_info(i, command_buffer[i]);
     }
   }
   command_entry.command_func();
