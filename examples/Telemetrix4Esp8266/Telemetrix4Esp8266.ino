@@ -423,7 +423,7 @@ void reset_data_structures(){
 
     dht_current_millis = 0;      // for analog input loop
     dht_previous_millis = 0;     // for analog input loop
-    dht_scan_interval = 2000;    // scan dht's every 2 seconds
+    dht_scan_interval = 2100;    // scan dht's every 2 seconds
 
     memset(sonars, 0, sizeof(sonars));
     memset(dhts, 0, sizeof(dhts));
