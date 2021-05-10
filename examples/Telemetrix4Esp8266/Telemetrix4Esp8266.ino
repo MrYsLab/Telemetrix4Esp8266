@@ -34,23 +34,6 @@ uint16_t PORT = 31335;
 
 WiFiServer wifiServer(PORT);
 
-/*
- Copyright (c) 2020 Alan Yorinks All rights reserved.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- Version 3 as published by the Free Software Foundation; either
- or (at your option) any later version.
- This library is distributed in the hope that it will be useful,f
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- General Public License for more details.
-
- You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSEf
- along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
-
 // We define these here to provide a forward reference.
 // If you add a new command, you must add the command handler
 // here as well.
@@ -202,7 +185,7 @@ command_descriptor command_table[19] =
 
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 1
-#define FIRMWARE_MINOR 3
+#define FIRMWARE_MINOR 5
 
 // A buffer to hold i2c report data
 byte i2c_report_message[64];
