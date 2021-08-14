@@ -22,6 +22,10 @@
 #include <DHTStable.h>
 #include <Servo.h>
 #include <Ultrasonic.h>
+#include <SPI.h>
+#include <OneWire.h>
+
+
 
 // Modify the next two lines to match your network values
 const char *ssid = "YOUR_SSID";
@@ -76,6 +80,36 @@ extern void enable_all_reports();
 
 extern void reset_data_structures();
 
+extern void init_pin_structures();
+
+extern void init_spi();
+
+extern void write_blocking_spi();
+
+extern void read_blocking_spi();
+
+extern void set_format_spi();
+
+extern void spi_cs_control();
+
+extern void onewire_init();
+
+extern void onewire_reset();
+
+extern void onewire_select();
+
+extern void onewire_skip();
+
+extern void onewire_write();
+
+extern void onewire_read();
+
+extern void onewire_reset_search();
+
+extern void onewire_search();
+
+extern void onewire_crc8();
+
 // This value must be the same as specified when instantiating the
 // telemetrix client. The client defaults to a value of 1.
 // This value is used for the client to auto-discover and to
@@ -105,6 +139,21 @@ extern void reset_data_structures();
 #define SET_ANALOG_SCANNING_INTERVAL 16
 #define ENABLE_ALL_REPORTS 17
 #define RESET_DATA_STRUCTURES 18
+#define SPI_INIT 19
+#define SPI_WRITE_BLOCKING 20
+#define SPI_READ_BLOCKING 21
+#define SPI_SET_FORMAT 22
+#define SPI_CS_CONTROL 23
+#define ONE_WIRE_INIT 24
+#define ONE_WIRE_RESET 25
+#define ONE_WIRE_SELECT 26
+#define ONE_WIRE_SKIP 27
+#define ONE_WIRE_WRITE 28
+#define ONE_WIRE_READ 29
+#define ONE_WIRE_RESET_SEARCH 30
+#define ONE_WIRE_SEARCH 31
+#define ONE_WIRE_CRC8 32
+
 
 // When adding a new command update the command_table.
 // The command length is the number of bytes that follow
@@ -119,29 +168,42 @@ struct command_descriptor
 
 // An array of pointers to the command functions
 
-// If you add new commands, make sure to extend the siz of this
-// array.
-command_descriptor command_table[19] =
-        {
-                {&serial_loopback},
-                {&set_pin_mode},
-                {&digital_write},
-                {&analog_write},
-                {&modify_reporting},
-                {&get_firmware_version},
-                {&are_you_there},
-                {&servo_attach},
-                {&servo_write},
-                {&servo_detach},
-                {&i2c_begin},
-                {&i2c_read},
-                {&i2c_write},
-                {&sonar_new},
-                {dht_new},
-                {stop_all_reports},
-                {set_analog_scanning_interval},
-                {enable_all_reports},
-                {reset_data_structures}};
+command_descriptor command_table[] =
+{
+  {&serial_loopback},
+  {&set_pin_mode},
+  {&digital_write},
+  {&analog_write},
+  {&modify_reporting},
+  {&get_firmware_version},
+  {&are_you_there},
+  {&servo_attach},
+  {&servo_write},
+  {&servo_detach},
+  {&i2c_begin},
+  {&i2c_read},
+  {&i2c_write},
+  {&sonar_new},
+  {&dht_new},
+  {&stop_all_reports},
+  {&set_analog_scanning_interval},
+  {&enable_all_reports},
+  {&reset_data_structures},
+  {&init_spi},
+  {&write_blocking_spi},
+  {&read_blocking_spi},
+  {&set_format_spi},
+  {&spi_cs_control},
+  {&onewire_init},
+  {&onewire_reset},
+  {&onewire_select},
+  {&onewire_skip},
+  {&onewire_write},
+  {&onewire_read},
+  {&onewire_reset_search},
+  {&onewire_search},
+  {&onewire_crc8}
+};
 
 // Input pin reporting control sub commands (modify_reporting)
 #define REPORTING_DISABLE_ALL 0
@@ -177,6 +239,9 @@ command_descriptor command_table[19] =
 #define I2C_READ_REPORT 10
 #define SONAR_DISTANCE 11
 #define DHT_REPORT 12
+#define SPI_REPORT 13
+#define ONE_WIRE_REPORT 14
+
 #define DEBUG_PRINT 99
 
 // DHT Report sub-types
@@ -184,12 +249,15 @@ command_descriptor command_table[19] =
 #define DHT_READ_ERROR 1
 
 // firmware version - update this when bumping the version
-#define FIRMWARE_MAJOR 2
+#define FIRMWARE_MAJOR 3
 #define FIRMWARE_MINOR 0
 #define FIRMWARE_PATCH 0
 
 // A buffer to hold i2c report data
 byte i2c_report_message[64];
+
+// A buffer to hold spi report data
+byte spi_report_message[64];
 
 bool stop_reports = false; // a flag to stop sending all report messages
 
@@ -256,6 +324,10 @@ unsigned long sonar_current_millis;  // for analog input loop
 unsigned long sonar_previous_millis; // for analog input loop
 uint8_t sonar_scan_interval = 33;    // Milliseconds between sensor pings
 // (29ms is about the min to avoid = 19;
+
+// a pointer to a OneWire object
+OneWire *ow = NULL;
+
 
 // DHT Management
 #define MAX_DHTS 6                // max number of devices
@@ -646,6 +718,147 @@ void dht_new() {
         dht_index++;
     }
 }
+
+// initialize the SPI interface
+void init_spi() {
+
+  int cs_pin;
+
+  //Serial.print(command_buffer[1]);
+  // initialize chip select GPIO pins
+  for (int i = 0; i < command_buffer[0]; i++) {
+    cs_pin = command_buffer[1 + i];
+    // Chip select is active-low, so we'll initialise it to a driven-high state
+    pinMode(cs_pin, OUTPUT);
+    digitalWrite(cs_pin, HIGH);
+  }
+  SPI.begin();
+}
+
+// write a number of blocks to the SPI device
+void write_blocking_spi() {
+  int num_bytes = command_buffer[0];
+
+  for (int i = 0; i < num_bytes; i++) {
+    SPI.transfer(command_buffer[1 + i] );
+  }
+}
+
+// read a number of bytes from the SPI device
+void read_blocking_spi() {
+  // command_buffer[0] == number of bytes to read
+  // command_buffer[1] == read register
+
+  // spi_report_message[0] = length of message including this element
+  // spi_report_message[1] = SPI_REPORT
+  // spi_report_message[2] = register used for the read
+  // spi_report_message[3] = number of bytes returned
+  // spi_report_message[4..] = data read
+
+  // configure the report message
+  // calculate the packet length
+  spi_report_message[0] = command_buffer[0] + 3; // packet length
+  spi_report_message[1] = SPI_REPORT;
+  spi_report_message[2] = command_buffer[1]; // register
+  spi_report_message[3] = command_buffer[0]; // number of bytes read
+
+  // write the register out. OR it with 0x80 to indicate a read
+  SPI.transfer(command_buffer[1] | 0x80);
+
+  // now read the specified number of bytes and place
+  // them in the report buffer
+  for (int i = 0; i < command_buffer[0] ; i++) {
+    spi_report_message[i + 4] = SPI.transfer(0x00);
+  }
+  Serial.write(spi_report_message, command_buffer[0] + 4);
+}
+
+// modify the SPI format
+void set_format_spi() {
+
+    SPISettings(command_buffer[0], command_buffer[1], command_buffer[2]);
+}
+
+// set the SPI chip select line
+void spi_cs_control() {
+  int cs_pin = command_buffer[0];
+  int cs_state = command_buffer[1];
+  digitalWrite(cs_pin, cs_state);
+}
+
+// Initialize the OneWire interface
+void onewire_init() {
+  ow = new OneWire(command_buffer[0]);
+}
+
+// send a OneWire reset
+void onewire_reset(){
+   uint8_t reset_return = ow->reset();
+   uint8_t onewire_report_message[] = {3, ONE_WIRE_REPORT, ONE_WIRE_RESET, reset_return};
+
+   Serial.write(onewire_report_message, 4);
+}
+
+// send a OneWire select
+void onewire_select(){
+    uint8_t dev_address[8];
+
+    for(int i = 0; i < 8; i++){
+        dev_address[i] = command_buffer[i];
+    }
+    ow->select(dev_address);
+}
+
+// send a OneWire skip
+void onewire_skip(){
+    ow->skip();
+}
+
+// write 1 byte to the OneWire device
+void onewire_write(){
+    // write data and power values
+    ow->write(command_buffer[0], command_buffer[1]);
+}
+
+// read one byte from the OneWire device
+void onewire_read(){
+  // onewire_report_message[0] = length of message including this element
+  // onewire_report_message[1] = ONEWIRE_REPORT
+  // onewire_report_message[2] = message subtype = 29
+  // onewire_report_message[3] = data read
+
+  uint8_t data = ow->read();
+
+  uint8_t onewire_report_message[] = {3, ONE_WIRE_REPORT, ONE_WIRE_READ, data};
+
+  Serial.write(onewire_report_message, 4);
+
+}
+
+// Send a OneWire reset search command
+void onewire_reset_search(){
+  ow->reset_search();
+}
+
+// Send a OneWire search command
+void onewire_search(){
+    uint8_t onewire_report_message[] = {10, ONE_WIRE_REPORT, ONE_WIRE_SEARCH,
+                                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                                        0xff};
+    bool found;
+
+    ow->search(&onewire_report_message[3], found);
+    Serial.write(onewire_report_message, 11);
+}
+
+// Calculate a OneWire CRC8 on a buffer containing a specified number of bytes
+void onewire_crc8(){
+    uint8_t crc = ow->crc8(&command_buffer[1], command_buffer[0]);
+    uint8_t onewire_report_message[] = {3, ONE_WIRE_REPORT, ONE_WIRE_CRC8, crc};
+    Serial.write(onewire_report_message, 4);
+
+}
+
 
 void stop_all_reports()
 {
