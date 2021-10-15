@@ -251,7 +251,7 @@ command_descriptor command_table[] =
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 3
 #define FIRMWARE_MINOR 0
-#define FIRMWARE_PATCH 0
+#define FIRMWARE_PATCH 1
 
 // A buffer to hold i2c report data
 byte i2c_report_message[64];
