@@ -65,8 +65,8 @@
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
 // Modify the next two lines to match your network values
-const char *ssid = "YOUR_SSID";
-const char *password = "YOUR_PASSWORD";
+const char *ssid = "A-Net";
+const char *password = "Sam2Curly";
 
 // Default ip port value.
 // Set the telemetrix or telemetrix-aio port to the same value
@@ -249,6 +249,7 @@ extern void get_features();
 #define STEPPERS_FEATURE 0x04
 #define SPI_FEATURE 0x08
 #define SERVO_FEATURE 0x10
+#define SONAR_FEATURE 0x20
 
 // a byte to hold the list of enabled features
 uint8_t features = 0;
@@ -1840,6 +1841,9 @@ void setup()
   features |= SERVO_FEATURE;
 #endif
 
+#ifdef SONAR_ENABLED
+  features |= SONAR_FEATURE;
+#endif
 
 #ifdef STEPPERS_ENABLED
 
@@ -1855,6 +1859,7 @@ void loop()
 {
 
   client = wifiServer.available();
+
 
   if (client)
   {
@@ -1888,6 +1893,6 @@ void loop()
     }
     client.stop();
     Serial.println("Client disconnected");
+    ESP.restart();
   }
 }
-
