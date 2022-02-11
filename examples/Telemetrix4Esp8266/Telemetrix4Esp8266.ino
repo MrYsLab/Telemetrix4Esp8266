@@ -15,22 +15,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-/*
-  Copyright (c) 2020-2021 Alan Yorinks All rights reserved.
 
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-  Version 3 as published by the Free Software Foundation; either
-  or (at your option) any later version.
-  This library is distributed in the hope that it will be useful,f
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  General Public License for more details.
-
-  You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSEf
-  along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 
 
 #include <Arduino.h>
@@ -65,8 +50,8 @@
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
 // Modify the next two lines to match your network values
-const char *ssid = "A-Net";
-const char *password = "Sam2Curly";
+const char *ssid = "YOUR_SSID";
+const char *password = "YOUR_PASSWORD";
 
 // Default ip port value.
 // Set the telemetrix or telemetrix-aio port to the same value
@@ -431,7 +416,7 @@ byte command_buffer[MAX_COMMAND_LENGTH];
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 4
 #define FIRMWARE_MINOR 0
-#define FIRMWARE_PATCH 0
+#define FIRMWARE_PATCH 1
 
 // A buffer to hold i2c report data
 byte i2c_report_message[64];
@@ -1176,12 +1161,18 @@ void stepper_move_to() {
   // position MSB-1 = command_buffer[2]
   // position MSB-2 = command_buffer[3]
   // position LSB = command_buffer[4]
+  // polarity = command_buffer[5]
+
 
   // convert the 4 position bytes to a long
   long position = (long)(command_buffer[1]) << 24;
   position += (long)(command_buffer[2]) << 16;
   position += command_buffer[3] << 8;
   position += command_buffer[4] ;
+
+  if (command_buffer[5]) {
+    position *= -1;
+  }
 
   steppers[command_buffer[0]]->moveTo(position);
 #endif
@@ -1196,12 +1187,18 @@ void stepper_move() {
   // position MSB-1 = command_buffer[2]
   // position MSB-2 = command_buffer[3]
   // position LSB = command_buffer[4]
+  // polarity = command_buffer[5]
+
 
   // convert the 4 position bytes to a long
   long position = (long)(command_buffer[1]) << 24;
   position += (long)(command_buffer[2]) << 16;
   position += command_buffer[3] << 8;
   position += command_buffer[4] ;
+
+  if (command_buffer[5]) {
+    position *= -1;
+  }
 
   steppers[command_buffer[0]]->move(position);
 #endif
