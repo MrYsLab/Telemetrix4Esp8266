@@ -416,7 +416,7 @@ byte command_buffer[MAX_COMMAND_LENGTH];
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 4
 #define FIRMWARE_MINOR 0
-#define FIRMWARE_PATCH 1
+#define FIRMWARE_PATCH 2
 
 // A buffer to hold i2c report data
 byte i2c_report_message[64];
