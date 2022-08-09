@@ -1323,7 +1323,7 @@ void stepper_get_current_position() {
 
   byte report_message[7] = {6, STEPPER_CURRENT_POSITION, command_buffer[0]};
 
-  long position = steppers[command_buffer[0]]->targetPosition();
+  long position = steppers[command_buffer[0]]->currentPosition();
 
 
   report_message[3] = (byte) ((position & 0xFF000000) >> 24);
