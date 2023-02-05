@@ -227,6 +227,10 @@ extern void stepper_is_running();
 
 extern void get_features();
 
+extern void sonar_disable();
+
+extern void sonar_enable();
+
 // features
 // comment out the define to disable a feature
 #define ONEWIRE_FEATURE 0x01
@@ -297,6 +301,9 @@ uint8_t features = 0;
 #define STEPPER_GET_DISTANCE_TO_GO 52
 #define STEPPER_GET_TARGET_POSITION 53
 #define GET_FEATURES 54
+#define SONAR_SCAN_OFF 55
+#define SONAR_SCAN_ON 56
+
 
 
 // When adding a new command update the command_table.
@@ -369,6 +376,8 @@ command_descriptor command_table[] =
   {&stepper_get_distance_to_go},
   (&stepper_get_target_position),
   (&get_features),
+  (&sonar_disable),
+  (&sonar_enable),
 };
 
 // Input pin reporting control sub commands (modify_reporting)
@@ -415,8 +424,8 @@ byte command_buffer[MAX_COMMAND_LENGTH];
 
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 5
-#define FIRMWARE_MINOR 0
-#define FIRMWARE_PATCH 1
+#define FIRMWARE_MINOR 1
+#define FIRMWARE_PATCH 0
 
 // A buffer to hold i2c report data
 byte i2c_report_message[64];
@@ -428,6 +437,9 @@ byte spi_report_message[64];
 #endif
 
 bool stop_reports = false; // a flag to stop sending all report messages
+
+bool sonar_reporting_enabled = true; // flag to start and stop sonar reporing
+
 
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
@@ -940,6 +952,14 @@ void sonar_new()
   sonars[sonars_index].trigger_pin = command_buffer[0];
   sonars_index++;
 #endif
+}
+
+void sonar_disable(){
+    sonar_reporting_enabled = false;
+}
+
+void sonar_enable(){
+    sonar_reporting_enabled = true;
 }
 
 /***********************************
@@ -1857,7 +1877,7 @@ void setup()
 void loop()
 {
 
-  client = wifiServer.available();
+  client = wifiServer.accept();
 
 
   if (client)
@@ -1877,7 +1897,9 @@ void loop()
           scan_digital_inputs();
           scan_analog_inputs();
 #ifdef SONAR_ENABLED
-          scan_sonars();
+        if(sonar_reporting_enabled ){
+            scan_sonars();
+        }
 #endif
 
 #ifdef DHT_ENABLED
