@@ -1082,7 +1082,23 @@ void set_format_spi() {
 #ifdef SPI_ENABLED
 
   spi_clock_freq = F_CPU / command_buffer[0];
-  spi_mode = command_buffer[2];
+  switch(command_buffer[2]) {
+      case 0:
+          spi_mode = SPI_MODE0;
+          break;
+      case 1:
+          spi_mode = SPI_MODE1;
+          break;
+      case 2:
+          spi_mode = SPI_MODE2;
+          break;
+      case 3:
+          spi_mode = SPI_MODE3;
+          break;
+      default:
+          spi_mode = SPI_MODE0;
+          break;
+  }
 
   spi_bit_order = command_buffer[1] ;
   //SPISettings(command_buffer[0], command_buffer[1], command_buffer[2]);
@@ -1317,10 +1333,14 @@ void stepper_set_speed() {
   // motor_id = command_buffer[0]
   // speed_msb = command_buffer[1]
   // speed_lsb = command_buffer[2]
+  // direction = command_buffer[3]
   //#if !defined (__AVR_ATmega328P__)
 #ifdef STEPPERS_FEATURE
 
   float speed = (float) ((command_buffer[1] << 8) + command_buffer[2]);
+  if(command_buffer[3] == 1){
+      speed = speed * 1.0;
+  }
   steppers[command_buffer[0]]->setSpeed(speed);
 #endif
 }
