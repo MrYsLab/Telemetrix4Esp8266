@@ -428,7 +428,7 @@ byte command_buffer[MAX_COMMAND_LENGTH];
 
 // firmware version - update this when bumping the version
 #define FIRMWARE_MAJOR 5
-#define FIRMWARE_MINOR 2
+#define FIRMWARE_MINOR 3
 #define FIRMWARE_PATCH 0
 
 // A buffer to hold i2c report data
@@ -1517,14 +1517,14 @@ void stepper_is_running() {
 #ifdef STEPPERS_FEATURE
   // motor_id = command_buffer[0]
 
-  // report = STEPPER_IS_RUNNING, motor_id, distance(8 bytes)
+  // report = STEPPER_IS_RUNNING, motor_id, running state
 
 
-  byte report_message[3] = {2, STEPPER_RUNNING_REPORT, command_buffer[0]};
+  byte report_message[4] = {3, STEPPER_RUNNING_REPORT, command_buffer[0]};
 
-  report_message[2]  = steppers[command_buffer[0]]->isRunning();
+  report_message[3]  = steppers[command_buffer[0]]->isRunning();
 
-  client.write(report_message, 3);
+  client.write(report_message, 4);
 #endif
 
 }
