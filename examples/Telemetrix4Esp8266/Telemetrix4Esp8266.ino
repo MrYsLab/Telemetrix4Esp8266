@@ -19,7 +19,6 @@
 
 
 #include <Arduino.h>
-#include "ESP8266WiFi.h"
 #include "Telemetrix4Esp8266.h"
 #include <Wire.h>
 #include <DHTStable.h>
@@ -45,23 +44,7 @@
 // 10. Setup and Loop
 
 
-/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
-/* Specifying the SSID, Password, Port For Your Network             */
-/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 
-// Modify the next two lines to match your network values
-const char *ssid = "YOUR_SSID";
-const char *password = "YOUR_PASSWORD";
-
-// Default ip port value.
-// Set the telemetrix or telemetrix-aio port to the same value
-// if you need to change this value.
-uint16_t PORT = 31335;
-
-WiFiServer wifiServer(PORT);
-
-// wifi client connection
-WiFiClient client;
 
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
@@ -593,14 +576,14 @@ void send_debug_info(byte id, int value)
   debug_buffer[2] = id;
   debug_buffer[3] = highByte(value);
   debug_buffer[4] = lowByte(value);
-  client.write(debug_buffer, 5);
+  Serial.write(debug_buffer, 5);
 }
 
 // command functions
 void serial_loopback()
 {
   byte loop_back_buffer[3] = {2, (byte)SERIAL_LOOP_BACK, command_buffer[0]};
-  client.write(loop_back_buffer, 3);
+  Serial.write(loop_back_buffer, 3);
 }
 
 void set_pin_mode()
@@ -743,21 +726,21 @@ void reset_data_structures() {
 // retrieve the features byte
 void get_features() {
   byte report_message[3] = {2, FEATURES, features};
-  client.write(report_message, 3);
+  Serial.write(report_message, 3);
 
 }
 
 void get_firmware_version()
 {
   byte report_message[5] = {4, FIRMWARE_REPORT, FIRMWARE_MAJOR, FIRMWARE_MINOR, FIRMWARE_PATCH};
-  client.write(report_message, 5);
+  Serial.write(report_message, 5);
 }
 
 void are_you_there()
 {
   byte report_message[3] = {2, I_AM_HERE, ARDUINO_ID};
 
-  client.write(report_message, 3);
+  Serial.write(report_message, 3);
 }
 
 /***************************************************
@@ -802,7 +785,7 @@ void servo_attach()
   {
     // no open servos available, send a report back to client
     byte report_message[2] = {SERVO_UNAVAILABLE, pin};
-    client.write(report_message, 2);
+    Serial.write(report_message, 2);
   }
 #endif
 }
@@ -889,13 +872,13 @@ void i2c_read()
   if (command_buffer[2] < Wire.available())
   {
     byte report_message[4] = {3, I2C_TOO_FEW_BYTES_RCVD, 1, address};
-    client.write(report_message, 4);
+    Serial.write(report_message, 4);
     return;
   }
   else if (command_buffer[2] > Wire.available())
   {
     byte report_message[4] = {3, I2C_TOO_MANY_BYTES_RCVD, 1, address};
-    client.write(report_message, 4);
+    Serial.write(report_message, 4);
     return;
   }
 
@@ -926,7 +909,7 @@ void i2c_read()
 
   for (int i = 0; i < message_size + 6; i++)
   {
-    client.write(i2c_report_message[i]);
+    Serial.write(i2c_report_message[i]);
   }
 }
 
@@ -1130,7 +1113,7 @@ void onewire_reset() {
   uint8_t reset_return = ow->reset();
   uint8_t onewire_report_message[] = {3, ONE_WIRE_REPORT, ONE_WIRE_RESET, reset_return};
 
-  client.write(onewire_report_message, 4);
+  Serial.write(onewire_report_message, 4);
 #endif
 
 }
@@ -1177,7 +1160,7 @@ void onewire_read() {
 
   uint8_t onewire_report_message[] = {3, ONE_WIRE_REPORT, ONE_WIRE_READ, data};
 
-  client.write(onewire_report_message, 4);
+  Serial.write(onewire_report_message, 4);
 #endif
 }
 
@@ -1199,7 +1182,7 @@ void onewire_search() {
                                      };
 
   ow->search(&onewire_report_message[3]);
-  client.write(onewire_report_message, 11);
+  Serial.write(onewire_report_message, 11);
 #endif
 }
 
@@ -1209,7 +1192,7 @@ void onewire_crc8() {
 
   uint8_t crc = ow->crc8(&command_buffer[1], command_buffer[0]);
   uint8_t onewire_report_message[] = {3, ONE_WIRE_REPORT, ONE_WIRE_CRC8, crc};
-  client.write(onewire_report_message, 4);
+  Serial.write(onewire_report_message, 4);
 #endif
 }
 
@@ -1365,7 +1348,7 @@ void stepper_get_distance_to_go() {
   report_message[6] = (byte) ((dtg & 0x000000FF));
 
   // motor_id = command_buffer[0]
-  client.write(report_message, 7);
+  Serial.write(report_message, 7);
 #endif
 }
 
@@ -1389,7 +1372,7 @@ void stepper_get_target_position() {
   report_message[6] = (byte) ((target & 0x000000FF));
 
   // motor_id = command_buffer[0]
-  client.write(report_message, 7);
+  Serial.write(report_message, 7);
 #endif
 }
 
@@ -1413,7 +1396,7 @@ void stepper_get_current_position() {
   report_message[6] = (byte) ((position & 0x000000FF));
 
   // motor_id = command_buffer[0]
-  client.write(report_message, 7);
+  Serial.write(report_message, 7);
 #endif
 }
 
@@ -1524,7 +1507,7 @@ void stepper_is_running() {
 
   report_message[3]  = steppers[command_buffer[0]]->isRunning();
 
-  client.write(report_message, 4);
+  Serial.write(report_message, 4);
 #endif
 
 }
@@ -1534,12 +1517,12 @@ void stop_all_reports()
 {
   stop_reports = true;
   delay(20);
-  client.flush();
+  Serial.flush();
 }
 
 void enable_all_reports()
 {
-  client.flush();
+  Serial.flush();
   stop_reports = false;
   delay(20);
 }
@@ -1558,20 +1541,20 @@ void get_next_command()
   memset(command_buffer, 0, sizeof(command_buffer));
 
   // if there is no command waiting, then return
-  if (not client.available())
+  if (not Serial.available())
   {
     return;
   }
   // get the packet length
-  packet_length = (byte)client.read();
+  packet_length = (byte)Serial.read();
 
-  while (not client.available())
+  while (not Serial.available())
   {
     delay(1);
   }
 
   // get the command byte
-  command = (byte)client.read();
+  command = (byte)Serial.read();
 
   // uncomment the next line to see the packet length and command
   // send_debug_info(packet_length, command);
@@ -1583,11 +1566,11 @@ void get_next_command()
     for (int i = 0; i < packet_length - 1; i++)
     {
       // need this delay or data read is not correct
-      while (not client.available())
+      while (not Serial.available())
       {
         delay(1);
       }
-      command_buffer[i] = (byte)client.read();
+      command_buffer[i] = (byte)Serial.read();
       // uncomment out to see each of the bytes following the command
       // send_debug_info(i, command_buffer[i]);
     }
@@ -1625,7 +1608,7 @@ void scan_digital_inputs()
           the_digital_pins[i].last_value = value;
           report_message[2] = (byte)i;
           report_message[3] = value;
-          client.write(report_message, 4);
+          Serial.write(report_message, 4);
         }
       }
     }
@@ -1673,7 +1656,7 @@ void scan_analog_inputs()
             report_message[2] = (byte)i;
             report_message[3] = highByte(value); // get high order byte
             report_message[4] = lowByte(value);
-            client.write(report_message, 5);
+            Serial.write(report_message, 5);
             delay(1);
           }
         }
@@ -1707,7 +1690,7 @@ void scan_sonars()
           byte report_message[5] = {4, SONAR_DISTANCE, sonars[last_sonar_visited].trigger_pin,
                                     (byte)(distance >> 8), (byte)(distance & 0xff)
                                    };
-          client.write(report_message, 5);
+          Serial.write(report_message, 5);
         }
         last_sonar_visited++;
         if (last_sonar_visited == sonars_index)
@@ -1770,7 +1753,7 @@ void scan_dhts() {
 
         // if rv is not zero, this is an error report
         if (rv) {
-          client.write(report_message, 11);
+          Serial.write(report_message, 11);
           return;
         } else {
           float j, f;
@@ -1795,7 +1778,7 @@ void scan_dhts() {
 
           report_message[9] = (uint8_t) j;
           report_message[10] = (uint8_t)(f * 100);
-          client.write(report_message, 11);
+          Serial.write(report_message, 11);
         }
       }
     }
@@ -1820,7 +1803,7 @@ void run_steppers() {
           running = steppers[i]->isRunning();
           if (!running) {
             byte report_message[3] = {2, STEPPER_RUN_COMPLETE_REPORT, (byte)i};
-            client.write(report_message, 3);
+            Serial.write(report_message, 3);
             stepper_run_modes[i] = STEPPER_STOP;
           }
           break;
@@ -1832,7 +1815,7 @@ void run_steppers() {
           target_position = steppers[i]->targetPosition();
           if (target_position == steppers[i]->currentPosition()) {
             byte report_message[3] = {2, STEPPER_RUN_COMPLETE_REPORT, (byte)i};
-            client.write(report_message, 3);
+            Serial.write(report_message, 3);
             stepper_run_modes[i] = STEPPER_STOP;
 
           }
@@ -1855,34 +1838,9 @@ void setup()
   Serial.begin(115200);
 
   delay(1000);
-
-  WiFi.begin(ssid, password);
-
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  // turn on LED
-  digitalWrite(LED_BUILTIN, LOW);
-
-  Serial.print("\n\nAllow 15 seconds for connection to complete..");
-
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(1000);
-    Serial.print(".");
-  }
-
-  Serial.println();
-
   // Turn off LED
-  digitalWrite(LED_BUILTIN, HIGH);
 
-  Serial.print("Connected to WiFi. IP Address: ");
-  Serial.print(WiFi.localIP());
 
-  Serial.print("  IP Port: ");
-  Serial.println(PORT);
-
-  wifiServer.begin();
 
   // create an array of pin_descriptors for 100 pins
   // establish the digital pin array
@@ -1937,23 +1895,20 @@ void setup()
 #endif
 
   delay(200);
+  pinMode(13, OUTPUT);
+  for( int i = 0; i < 4; i++){
+    digitalWrite(13, HIGH);
+    delay(250);
+    digitalWrite(13, LOW);
+    delay(250);
+  }
 }
 
 void loop()
 {
 
-  client = wifiServer.accept();
 
 
-  if (client)
-  {
-    Serial.print("Client Connected to address: ");
-    Serial.println(client.remoteIP());
-
-    while (client.connected())
-    {
-      delay(1);
-      {
         // keep processing incoming commands
         get_next_command();
 
@@ -1975,10 +1930,6 @@ void loop()
           run_steppers();
 #endif
         }
-      }
+
     }
-    client.stop();
-    Serial.println("Client disconnected");
-    ESP.restart();
-  }
 }
